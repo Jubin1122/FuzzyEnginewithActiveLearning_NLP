@@ -1,0 +1,12 @@
+trigger:
+  - master
+  - develop
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: Data/build-templates
+
+jobs:
+  - template: job-build-docker.yaml@templates

@@ -1,0 +1,41 @@
+from airflow.kubernetes import secret
+from airflow.kubernetes.secret import Secret
+from airflow.operators.bash import BashOperator
+from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
+from airflow.operators.dummy import DummyOperator
+from airflow.models.variable import Variable
+from airflow import DAG
+from datetime import datetime
+from kubernetes.client.models import V1LocalObjectReference
+
+image = "mashrequae.azurecr.io/ds-aml-customer-risk-corporate:15273"
+
+connection_string = Variable.get('hive_secret')
+principle_id = Variable.get('AML_PRINCIPAL_ID')
+principle_pass = Variable.get('AML_PRINCIPAL_PASS')
+tenant_id = Variable.get('AML_TENANT_ID')
+
+# variable = {{ dag_run.conf.<your_variable> }}
+
+with DAG(
+    dag_id='ds-aml-customer-risk-scoring-corp-training',
+    schedule_interval = '@once',
+    start_date = datetime(year=2022,month=2,day=1),
+    tags=['EWS'],
+    catchup=False
+) as dag:
+    start =  DummyOperator(task_id='Start')
+    k = KubernetesPodOperator(
+        name='predict',
+        task_id='predict',
+        namespace='airflow-cluster',
+        image = image,
+        env_vars={'hive_secret':connection_string,
+                  'AML_PRINCIPAL_ID':principle_id,
+                  'AML_PRINCIPAL_PASS':principle_pass,
+                  'AML_TENANT_ID':tenant_id},
+        cmds = ["python", "main.py"],
+        image_pull_secrets=[V1LocalObjectReference('docker-secret')],
+        service_account_name='airflow-cluster'
+    )
+start >> k
