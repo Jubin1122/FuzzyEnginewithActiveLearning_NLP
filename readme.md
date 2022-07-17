@@ -38,3 +38,47 @@ The goal is to build a algorithm which can be scalable enough to run millions of
 
 
 ![Model](img/model.png)
+
+#### Testing and Active Learning
+
+To make the entire use case more practical, I looked for cases where I can identify the matches and cases where there is close matches but are different names. These matches helps me to create more robust model. However, the sample was not availaible, I initially performed this step to create this data set. Below is an example:
+
+<center>
+
+|     Name       |   Fuzzy Output  | Type  | Label |
+| -------------  |   ------------- | ----- | ----- |
+|  Jeff Bezos    |   Jeff Bezos    | Match |   1   |
+|  Jeif Bezzos   |   Jeff Bezos    | Match |   1   |
+|  Andre Fernadez|   Andre Fernadez| close |   0   |
+|  Andrai Feradez|   Andrai Feradez| close |   0   |
+
+</center>
+
+##### Building a model
+
+Finally, I developed a classification model, where I tested the RandomForest classifier, SVM, and XGBoost Classifier. XGBoost performs well, with the highest precision, as our business goal is to have the least False positives.
+
+However, I found that the model still produces incorrect labels for matches and close matches. To address this nondeterministic problem, I used a technique by which the model can be manually taught whether the labels are right or not, just like in a real-world situation. To achieve this, I used the concept of active learning. 
+
+
+<center>
+
+![alt-text-1](active_learning/active_learning/img/svm/svm_gt_without_normalization.png "title-1") ![alt-text-2](active_learning/active_learning/img/xgb/xgb_without_norm.png "title-2")
+
+</center>
+
+##### Pseudo Logic
+
+I have used pool based labelling, where we select a sample from a pool of unlabelled data for labelling. The following pseudo algorithm represents the learning process, for pool-based sampling:
+1. Divide the data to a ‘pool’ and a test-set
+2. Select ‘k’ samples from the pool for the initial train-set and label them, the remaining data will be the validation-set
+3. Normalize all the sets
+4. Train the Model using the train-set, with balanced weights.
+5. Use the trained model with the validation-set, get probabilities per sample.
+6. Use the trained model with the test-set, get performance measures.
+7. Select ‘k’ most-informative samples based on per-sample-probabilities, i.e., those that the model was most uncertain about regarding their labelling.
+8. Move these ‘k’ samples from the validation set to the train-set and query their labels.
+9. Inverse normalization for all the data-sets
+10. Stop according to the stop criterion, otherwise go to 3.
+
+
