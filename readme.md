@@ -1,4 +1,4 @@
-<h1 align="center">Fuzzy Utlity Engine with Active Learning</h1>
+<h1 align="center">Fuzzy Utility Engine with Active Learning</h1>
 
 ![Overview](img/overview.png)
 
